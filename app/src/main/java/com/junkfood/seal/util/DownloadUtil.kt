@@ -80,8 +80,22 @@ object DownloadUtil {
 
     private const val PLAYLIST_TITLE_SUBDIRECTORY_PREFIX = "%(playlist)s/"
 
-    private const val CROP_ARTWORK_COMMAND =
-        """--ppa "ffmpeg: -c:v mjpeg -vf crop=\"'if(gt(ih,iw),iw,ih)':'if(gt(iw,ih),ih,iw)'\"""""
+    // Written to a yt-dlp config file, so the filter is quoted twice: once for the config
+    // parser and once for --ppa's own argument splitting. Commas/semicolons are safe inside.
+    private const val CROP_FILTER_CENTER = """crop=\"'if(gt(ih,iw),iw,ih)':'if(gt(iw,ih),ih,iw)'\""""
+    private const val CROP_FILTER_LEFT = """crop=\"'min(iw,ih)':'min(iw,ih)':0:0\""""
+    private const val CROP_FILTER_BLUR_FILL =
+        """\"split[a][b];[a]scale=720:720:force_original_aspect_ratio=increase,crop=720:720,boxblur=30[bg];[b]scale=720:720:force_original_aspect_ratio=decrease[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2\""""
+
+    fun cropArtworkCommand(style: Int): String {
+        val filter =
+            when (style) {
+                CROP_LEFT -> CROP_FILTER_LEFT
+                CROP_BLUR_FILL -> CROP_FILTER_BLUR_FILL
+                else -> CROP_FILTER_CENTER
+            }
+        return """--ppa "ffmpeg: -c:v mjpeg -vf $filter""""
+    }
 
     @CheckResult
     fun getPlaylistOrVideoInfo(
@@ -221,6 +235,7 @@ object DownloadUtil {
         val maxDownloadRate: String,
         val privateDirectory: Boolean,
         val cropArtwork: Boolean,
+        val cropArtworkStyle: Int = CROP_CENTER,
         val sdcard: Boolean,
         val sdcardUri: String,
         val embedThumbnail: Boolean,
@@ -333,6 +348,7 @@ object DownloadUtil {
                     maxDownloadRate = PreferenceUtil.getMaxDownloadRate(),
                     privateDirectory = PRIVATE_DIRECTORY.getBoolean(),
                     cropArtwork = CROP_ARTWORK.getBoolean(),
+                    cropArtworkStyle = CROP_ARTWORK_STYLE.getInt(),
                     sdcard = SDCARD_DOWNLOAD.getBoolean(),
                     sdcardUri = SDCARD_URI.getString(),
                     embedThumbnail = EMBED_THUMBNAIL.getBoolean(),
@@ -610,7 +626,7 @@ object DownloadUtil {
 
                     if (cropArtwork) {
                         val configFile = context.getConfigFile(id)
-                        FileUtil.writeContentToFile(CROP_ARTWORK_COMMAND, configFile)
+                        FileUtil.writeContentToFile(cropArtworkCommand(cropArtworkStyle), configFile)
                         addOption("--config", configFile.absolutePath)
                     }
                 }

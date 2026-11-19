@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.outlined.AudioFile
+import androidx.compose.material.icons.outlined.Crop
 import androidx.compose.material.icons.outlined.HighQuality
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Settings
@@ -82,6 +83,9 @@ import com.junkfood.seal.util.CONVERT_M4A
 import com.junkfood.seal.util.CONVERT_MP3
 import com.junkfood.seal.util.CONVERT_SUBTITLE
 import com.junkfood.seal.util.CONVERT_VTT
+import com.junkfood.seal.util.CROP_ARTWORK_STYLE
+import com.junkfood.seal.util.CROP_BLUR_FILL
+import com.junkfood.seal.util.CROP_CENTER
 import com.junkfood.seal.util.DEFAULT
 import com.junkfood.seal.util.DownloadUtil
 import com.junkfood.seal.util.FORMAT_COMPATIBILITY
@@ -511,6 +515,51 @@ fun AudioConversionDialog(
                     selected = audioFormat == i,
                 ) {
                     audioFormat = i
+                }
+            }
+        },
+    )
+}
+
+@Composable
+fun CropArtworkStyleDialog(
+    onDismissRequest: () -> Unit,
+    cropStyle: Int,
+    onConfirm: (Int) -> Unit = {},
+) {
+    var cropStyle by remember { mutableIntStateOf(cropStyle) }
+    SealDialog(
+        onDismissRequest = onDismissRequest,
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.dismiss)) }
+        },
+        icon = { Icon(Icons.Outlined.Crop, null) },
+        title = { Text(stringResource(R.string.crop_artwork_style)) },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    CROP_ARTWORK_STYLE.updateInt(cropStyle)
+                    onConfirm(cropStyle)
+                    onDismissRequest()
+                }
+            ) {
+                Text(text = stringResource(R.string.confirm))
+            }
+        },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(
+                    modifier =
+                        Modifier.fillMaxWidth().padding(bottom = 12.dp).padding(horizontal = 24.dp),
+                    text = stringResource(R.string.crop_artwork_style_desc),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                for (i in CROP_CENTER..CROP_BLUR_FILL) DialogSingleChoiceItem(
+                    modifier = Modifier,
+                    text = PreferenceStrings.getCropArtworkStyleDesc(i),
+                    selected = cropStyle == i,
+                ) {
+                    cropStyle = i
                 }
             }
         },

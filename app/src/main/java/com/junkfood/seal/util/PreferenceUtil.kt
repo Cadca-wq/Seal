@@ -91,6 +91,7 @@ private const val HIGH_CONTRAST = "high_contrast"
 const val DISABLE_PREVIEW = "disable_preview"
 const val PRIVATE_DIRECTORY = "private_directory"
 const val CROP_ARTWORK = "crop_artwork"
+const val CROP_ARTWORK_STYLE = "crop_artwork_style"
 const val EMBED_THUMBNAIL = "embed_thumbnail"
 const val FORMAT_SELECTION = "format_selection"
 const val VIDEO_CLIP = "video_clip"
@@ -164,6 +165,10 @@ const val FORMAT_QUALITY = 2
 const val CONVERT_MP3 = 0
 const val CONVERT_M4A = 1
 
+const val CROP_CENTER = 0
+const val CROP_LEFT = 1
+const val CROP_BLUR_FILL = 2
+
 const val HIGH = 1
 const val MEDIUM = 2
 const val LOW = 3
@@ -229,6 +234,7 @@ private val IntPreferenceDefaults =
         DARK_THEME_VALUE to DarkThemePreference.FOLLOW_SYSTEM,
         WELCOME_DIALOG to 1,
         AUDIO_CONVERSION_FORMAT to NOT_SPECIFIED,
+        CROP_ARTWORK_STYLE to CROP_CENTER,
         VIDEO_QUALITY to NOT_SPECIFIED,
         VIDEO_FORMAT to FORMAT_QUALITY,
         UPDATE_CHANNEL to STABLE,
@@ -483,6 +489,13 @@ data class DarkThemePreference(
 }
 
 object PreferenceStrings {
+    fun getCropArtworkStyleDesc(style: Int = CROP_ARTWORK_STYLE.getInt()): String =
+        when (style) {
+            CROP_LEFT -> context.getString(R.string.crop_style_left)
+            CROP_BLUR_FILL -> context.getString(R.string.crop_style_blur_fill)
+            else -> context.getString(R.string.crop_style_center)
+        }
+
     fun getSubtitleConversionFormat(subtitleFormat: Int = CONVERT_SUBTITLE.getInt()): String =
         when (subtitleFormat) {
             CONVERT_LRC -> context.getString(R.string.convert_to, "lrc")

@@ -46,6 +46,7 @@ import com.junkfood.seal.ui.component.PreferenceSwitchWithDivider
 import com.junkfood.seal.util.AUDIO_CONVERSION_FORMAT
 import com.junkfood.seal.util.AUDIO_CONVERT
 import com.junkfood.seal.util.CROP_ARTWORK
+import com.junkfood.seal.util.CROP_ARTWORK_STYLE
 import com.junkfood.seal.util.CUSTOM_COMMAND
 import com.junkfood.seal.util.DownloadUtil
 import com.junkfood.seal.util.DownloadUtil.toFormatSorter
@@ -88,6 +89,8 @@ fun DownloadFormatPreferences(onNavigateBack: () -> Unit, navigateToSubtitlePage
     var showAudioFormatDialog by remember { mutableStateOf(false) }
     var showAudioQualityDialog by remember { mutableStateOf(false) }
     var showAudioConvertDialog by remember { mutableStateOf(false) }
+    var showCropStyleDialog by remember { mutableStateOf(false) }
+    var cropStyle by CROP_ARTWORK_STYLE.intState
     var showVideoQualityDialog by remember { mutableStateOf(false) }
     var showVideoFormatDialog by remember { mutableStateOf(false) }
     var showFormatSorterDialog by remember { mutableStateOf(false) }
@@ -188,16 +191,18 @@ fun DownloadFormatPreferences(onNavigateBack: () -> Unit, navigateToSubtitlePage
                     )
                 }
                 item {
-                    PreferenceSwitch(
+                    PreferenceSwitchWithDivider(
                         title = stringResource(R.string.crop_artwork),
-                        description = stringResource(R.string.crop_artwork_desc),
+                        description = PreferenceStrings.getCropArtworkStyleDesc(cropStyle),
                         icon = Icons.Outlined.Crop,
                         enabled = embedMetadata && audioSwitch && !isCustomCommandEnabled,
+                        onClick = { showCropStyleDialog = true },
                         isChecked = isArtworkCroppingEnabled,
-                    ) {
-                        isArtworkCroppingEnabled = !isArtworkCroppingEnabled
-                        PreferenceUtil.updateValue(CROP_ARTWORK, isArtworkCroppingEnabled)
-                    }
+                        onChecked = {
+                            isArtworkCroppingEnabled = !isArtworkCroppingEnabled
+                            PreferenceUtil.updateValue(CROP_ARTWORK, isArtworkCroppingEnabled)
+                        },
+                    )
                 }
                 item { PreferenceSubtitle(text = stringResource(id = R.string.video)) }
                 item {
@@ -342,6 +347,13 @@ fun DownloadFormatPreferences(onNavigateBack: () -> Unit, navigateToSubtitlePage
                 convertFormat = it
                 AUDIO_CONVERSION_FORMAT.updateInt(it)
             },
+        )
+    }
+    if (showCropStyleDialog) {
+        CropArtworkStyleDialog(
+            onDismissRequest = { showCropStyleDialog = false },
+            cropStyle = cropStyle,
+            onConfirm = { cropStyle = it },
         )
     }
     if (showVideoQualityDialog) {
