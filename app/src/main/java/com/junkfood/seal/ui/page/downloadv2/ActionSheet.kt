@@ -57,6 +57,7 @@ import com.junkfood.seal.download.Task.*
 import com.junkfood.seal.download.Task.DownloadState.Canceled
 import com.junkfood.seal.download.Task.DownloadState.Completed
 import com.junkfood.seal.download.Task.DownloadState.Error
+import com.junkfood.seal.util.AlreadyInArchiveException
 import com.junkfood.seal.download.Task.DownloadState.FetchingInfo
 import com.junkfood.seal.download.Task.DownloadState.Idle
 import com.junkfood.seal.download.Task.DownloadState.ReadyWithInfo
@@ -108,6 +109,18 @@ private fun ResumeButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
         contentColor = LocalFixedColorRoles.current.onTertiaryFixedVariant,
         imageVector = Icons.Outlined.RestartAlt,
         text = stringResource(R.string.resume),
+        onClick = onClick,
+    )
+}
+
+@Composable
+private fun DownloadAgainButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
+    ActionSheetPrimaryButton(
+        modifier = modifier,
+        containerColor = LocalFixedColorRoles.current.tertiaryFixed,
+        contentColor = LocalFixedColorRoles.current.onTertiaryFixedVariant,
+        imageVector = Icons.Outlined.FileDownload,
+        text = stringResource(R.string.download_again),
         onClick = onClick,
     )
 }
@@ -302,15 +315,24 @@ fun LazyListScope.ActionButtons(
             }
         }
         is Error -> {
-            item(key = "ResumeButton") {
-                ResumeButton(modifier = Modifier.animateItem()) {
-                    onActionPost(task, UiAction.Resume)
-                    onDismissRequest()
+            if (downloadState.throwable is AlreadyInArchiveException) {
+                item(key = "DownloadAgainButton") {
+                    DownloadAgainButton(modifier = Modifier.animateItem()) {
+                        onActionPost(task, UiAction.DownloadAgain)
+                        onDismissRequest()
+                    }
                 }
-            }
-            item(key = "ErrorReportButton") {
-                ErrorReportButton(modifier = Modifier.animateItem()) {
-                    onActionPost(task, UiAction.CopyErrorReport(downloadState.throwable))
+            } else {
+                item(key = "ResumeButton") {
+                    ResumeButton(modifier = Modifier.animateItem()) {
+                        onActionPost(task, UiAction.Resume)
+                        onDismissRequest()
+                    }
+                }
+                item(key = "ErrorReportButton") {
+                    ErrorReportButton(modifier = Modifier.animateItem()) {
+                        onActionPost(task, UiAction.CopyErrorReport(downloadState.throwable))
+                    }
                 }
             }
         }

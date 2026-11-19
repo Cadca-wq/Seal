@@ -189,6 +189,8 @@ sealed interface UiAction {
 
     data object Resume : UiAction
 
+    data object DownloadAgain : UiAction
+
     data class CopyErrorReport(val throwable: Throwable) : UiAction
 }
 
@@ -220,6 +222,7 @@ fun DownloadPageV2(
             UiAction.Cancel -> downloader.cancel(task)
             UiAction.Delete -> downloader.remove(task)
             UiAction.Resume -> downloader.restart(task)
+            UiAction.DownloadAgain -> downloader.redownload(task)
             is UiAction.CopyErrorReport -> {
                 clipboardManager.setText(
                     AnnotatedString(getErrorReport(action.throwable, task.url))
@@ -790,6 +793,8 @@ internal class DownloadPageV2Test {
             override fun enqueue(task: Task) {}
 
             override fun enqueue(task: Task, state: Task.State) {}
+
+            override fun redownload(task: Task) {}
 
             override fun remove(task: Task): Boolean {
                 return true

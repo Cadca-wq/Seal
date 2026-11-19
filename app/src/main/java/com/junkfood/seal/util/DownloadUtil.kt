@@ -257,6 +257,8 @@ object DownloadUtil {
         val cropArtwork: Boolean,
         val cropArtworkStyle: Int = CROP_CENTER,
         val cleanUpTags: Boolean = false,
+        /** Set by "Download again": run once without the download archive. */
+        val ignoreDownloadArchive: Boolean = false,
         val sdcard: Boolean,
         val sdcardUri: String,
         val embedThumbnail: Boolean,
@@ -741,12 +743,12 @@ object DownloadUtil {
                     if (debug) {
                         addOption("-v")
                     }
-                    if (useDownloadArchive) {
+                    if (useDownloadArchive && !ignoreDownloadArchive) {
                         val archiveFile = context.getArchiveFile()
                         val archiveFileContent = archiveFile.readText()
                         if (archiveFileContent.contains("${videoInfo.extractor} ${videoInfo.id}")) {
                             return Result.failure(
-                                YoutubeDLException(
+                                AlreadyInArchiveException(
                                     context.getString(R.string.download_archive_error)
                                 )
                             )
@@ -931,7 +933,10 @@ object DownloadUtil {
                     if (aria2c) {
                         enableAria2c()
                     }
-                    if (useDownloadArchive) {
+                    if (ignoreDownloadArchive) {
+                        // passed on the command line, so it also beats an archive in the template
+                        addOption("--no-download-archive")
+                    } else if (useDownloadArchive) {
                         useDownloadArchive()
                     }
                     if (restrictFilenames) {
@@ -949,9 +954,23 @@ object DownloadUtil {
             }
 
         return runCatching {
-            YoutubeDL.getInstance()
-                .execute(request = request, processId = taskId, callback = progressCallback)
-        }
+                YoutubeDL.getInstance()
+                    .execute(request = request, processId = taskId, callback = progressCallback)
+            }
+            .mapCatching { response ->
+                // yt-dlp exits normally when the archive skips everything, so look for the
+                // skip message with nothing written
+                if (
+                    !preferences.ignoreDownloadArchive &&
+                        response.out.contains("has already been recorded in the archive") &&
+                        !response.out.contains("Destination:")
+                ) {
+                    throw AlreadyInArchiveException(
+                        context.getString(R.string.download_archive_error)
+                    )
+                }
+                response
+            }
     }
 
     suspend fun executeCommandInBackground(

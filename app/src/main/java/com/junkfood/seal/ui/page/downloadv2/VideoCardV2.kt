@@ -64,6 +64,7 @@ import com.junkfood.seal.download.Task
 import com.junkfood.seal.download.Task.DownloadState.Canceled
 import com.junkfood.seal.download.Task.DownloadState.Completed
 import com.junkfood.seal.download.Task.DownloadState.Error
+import com.junkfood.seal.util.AlreadyInArchiveException
 import com.junkfood.seal.download.Task.DownloadState.FetchingInfo
 import com.junkfood.seal.download.Task.DownloadState.Idle
 import com.junkfood.seal.download.Task.DownloadState.ReadyWithInfo
@@ -412,7 +413,12 @@ fun ListItemStateText(
             when (downloadState) {
                 is Canceled -> stringResource(R.string.status_canceled)
                 is Completed -> stringResource(R.string.status_downloaded)
-                is Error -> stringResource(R.string.status_error)
+                is Error ->
+                    stringResource(
+                        if (downloadState.throwable is AlreadyInArchiveException)
+                            R.string.status_in_archive
+                        else R.string.status_error
+                    )
                 is FetchingInfo -> stringResource(R.string.status_fetching_video_info)
                 Idle -> stringResource(R.string.status_enqueued)
                 ReadyWithInfo -> stringResource(R.string.status_enqueued)
@@ -492,7 +498,9 @@ private fun CardItemStateText(modifier: Modifier = Modifier, downloadState: Task
         when (downloadState) {
             is Canceled -> R.string.status_canceled
             is Completed -> R.string.status_downloaded
-            is Error -> R.string.status_error
+            is Error ->
+                if (downloadState.throwable is AlreadyInArchiveException) R.string.status_in_archive
+                else R.string.status_error
             is FetchingInfo -> R.string.status_fetching_video_info
             Idle -> R.string.status_enqueued
             ReadyWithInfo -> R.string.status_enqueued
@@ -525,7 +533,12 @@ fun ActionButton(
 ) =
     when (downloadState) {
         is Error -> {
-            RestartButton(modifier = modifier) { onActionPost(UiAction.Resume) }
+            RestartButton(modifier = modifier) {
+                onActionPost(
+                    if (downloadState.throwable is AlreadyInArchiveException) UiAction.DownloadAgain
+                    else UiAction.Resume
+                )
+            }
         }
         is Canceled -> {
             ResumeButton(modifier = modifier, downloadState.progress) {

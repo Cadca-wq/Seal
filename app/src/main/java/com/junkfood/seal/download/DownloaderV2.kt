@@ -21,6 +21,7 @@ import com.junkfood.seal.download.Task.RestartableAction.FetchInfo
 import com.junkfood.seal.download.Task.TypeInfo
 import com.junkfood.seal.util.DownloadUtil
 import com.junkfood.seal.util.FileUtil
+import com.junkfood.seal.util.AlreadyInArchiveException
 import com.junkfood.seal.util.NotificationUtil
 import com.junkfood.seal.util.PreferenceUtil
 import com.junkfood.seal.util.VideoInfo
@@ -64,6 +65,9 @@ interface DownloaderV2 {
     }
 
     fun remove(task: Task): Boolean
+
+    /** Replace a task skipped by the download archive with one that ignores the archive */
+    fun redownload(task: Task)
 }
 
 internal object FakeDownloaderV2 : DownloaderV2 {
@@ -84,6 +88,8 @@ internal object FakeDownloaderV2 : DownloaderV2 {
     override fun remove(task: Task): Boolean {
         return true
     }
+
+    override fun redownload(task: Task) {}
 }
 
 /**
@@ -183,6 +189,22 @@ class DownloaderV2Impl(private val appContext: Context) : DownloaderV2, KoinComp
 
     override fun restart(task: Task) {
         task.restartImpl()
+    }
+
+    override fun redownload(task: Task) {
+        val oldState = taskStateMap[task] ?: return
+        val newTask =
+            Task(
+                url = task.url,
+                type = task.type,
+                preferences = task.preferences.copy(ignoreDownloadArchive = true),
+            )
+        val info = oldState.videoInfo
+        // custom commands always start from Idle; others can reuse the fetched info
+        val downloadState =
+            if (info != null && task.type !is TypeInfo.CustomCommand) ReadyWithInfo else Idle
+        remove(task)
+        enqueue(newTask, Task.State(downloadState, info, oldState.viewState))
     }
 
     private var Task.state: Task.State
@@ -340,7 +362,10 @@ class DownloaderV2Impl(private val appContext: Context) : DownloaderV2, KoinComp
                         downloadState = Error(throwable = throwable, action = Download)
                         NotificationUtil.notifyError(
                             title = viewState.title,
-                            textId = R.string.fetch_info_error_msg,
+                            textId =
+                                if (throwable is AlreadyInArchiveException)
+                                    R.string.status_in_archive
+                                else R.string.fetch_info_error_msg,
                             notificationId = notificationId,
                             report = throwable.stackTraceToString(),
                         )
@@ -430,7 +455,10 @@ class DownloaderV2Impl(private val appContext: Context) : DownloaderV2, KoinComp
                         downloadState = Error(throwable = throwable, action = Download)
                         NotificationUtil.notifyError(
                             title = viewState.title,
-                            textId = R.string.fetch_info_error_msg,
+                            textId =
+                                if (throwable is AlreadyInArchiveException)
+                                    R.string.status_in_archive
+                                else R.string.fetch_info_error_msg,
                             notificationId = notificationId,
                             report = throwable.stackTraceToString(),
                         )
