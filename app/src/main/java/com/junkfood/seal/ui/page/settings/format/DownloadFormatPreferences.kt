@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArtTrack
+import androidx.compose.material.icons.outlined.CleaningServices
 import androidx.compose.material.icons.outlined.ContentCut
 import androidx.compose.material.icons.outlined.Crop
 import androidx.compose.material.icons.outlined.HighQuality
@@ -45,6 +46,7 @@ import com.junkfood.seal.ui.component.PreferenceSwitch
 import com.junkfood.seal.ui.component.PreferenceSwitchWithDivider
 import com.junkfood.seal.util.AUDIO_CONVERSION_FORMAT
 import com.junkfood.seal.util.AUDIO_CONVERT
+import com.junkfood.seal.util.CLEAN_UP_TAGS
 import com.junkfood.seal.util.CROP_ARTWORK
 import com.junkfood.seal.util.CROP_ARTWORK_STYLE
 import com.junkfood.seal.util.CUSTOM_COMMAND
@@ -85,6 +87,7 @@ fun DownloadFormatPreferences(onNavigateBack: () -> Unit, navigateToSubtitlePage
     val embedSubtitle by EMBED_SUBTITLE.booleanState
     var remuxToMkv by MERGE_OUTPUT_MKV.booleanState
     var embedMetadata by EMBED_METADATA.booleanState
+    var cleanUpTags by CLEAN_UP_TAGS.booleanState
 
     var showAudioFormatDialog by remember { mutableStateOf(false) }
     var showAudioQualityDialog by remember { mutableStateOf(false) }
@@ -203,6 +206,18 @@ fun DownloadFormatPreferences(onNavigateBack: () -> Unit, navigateToSubtitlePage
                             PreferenceUtil.updateValue(CROP_ARTWORK, isArtworkCroppingEnabled)
                         },
                     )
+                }
+                item {
+                    PreferenceSwitch(
+                        title = stringResource(R.string.clean_up_tags),
+                        description = stringResource(R.string.clean_up_tags_desc),
+                        icon = Icons.Outlined.CleaningServices,
+                        enabled = embedMetadata && audioSwitch && !isCustomCommandEnabled,
+                        isChecked = cleanUpTags,
+                    ) {
+                        cleanUpTags = !cleanUpTags
+                        CLEAN_UP_TAGS.updateBoolean(cleanUpTags)
+                    }
                 }
                 item { PreferenceSubtitle(text = stringResource(id = R.string.video)) }
                 item {

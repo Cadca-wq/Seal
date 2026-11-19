@@ -220,6 +220,8 @@
     <string name="crop_artwork">Crop artwork</string>
     <string name="crop_artwork_desc">Crop embedded image into square</string>
     <string name="crop_artwork_style">Crop style</string>
+    <string name="clean_up_tags">Clean up tags</string>
+    <string name="clean_up_tags_desc">Remove \"(Official Audio)\" and similar from titles, \" - Topic\" from artists, and split \"Artist - Title\"</string>
     <string name="crop_artwork_style_desc">How to make the embedded artwork square</string>
     <string name="crop_style_center">Centre crop</string>
     <string name="crop_style_left">Left (or top) crop</string>

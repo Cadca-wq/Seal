@@ -87,6 +87,26 @@ object DownloadUtil {
     private const val CROP_FILTER_BLUR_FILL =
         """\"split[a][b];[a]scale=720:720:force_original_aspect_ratio=increase,crop=720:720,boxblur=30[bg];[b]scale=720:720:force_original_aspect_ratio=decrease[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2\""""
 
+    // Checked with yt-dlp on real music video titles. Runs before the album/date parsing
+    // below so those pick up the cleaned title.
+    private val CLEAN_UP_TAGS_COMMANDS =
+        listOf(
+            // "Song (Official Audio)", "[Official Music Video]", "(Official Audio Stream)", ...
+            "--replace-in-metadata",
+            "title",
+            """(?i)\s*[(\[](?:official\s+)?(?:music\s+|lyrics?\s+|hd\s+)?(?:audio|video|visuali[sz]er|lyrics?)(?:\s+(?:stream|video))?[)\]]""",
+            "",
+            // "Artist - Topic" channels
+            "--replace-in-metadata",
+            "uploader,channel,artist",
+            """\s+-\s+Topic$""",
+            "",
+            // "Artist - Title", only when there is no artist tag (the leading "|" only
+            // matches when artist is empty)
+            "--parse-metadata",
+            """%(artist|)s|%(title)s:^\|(?P<artist>.+?) - (?P<title>.+)$""",
+        )
+
     fun cropArtworkCommand(style: Int): String {
         val filter =
             when (style) {
@@ -236,6 +256,7 @@ object DownloadUtil {
         val privateDirectory: Boolean,
         val cropArtwork: Boolean,
         val cropArtworkStyle: Int = CROP_CENTER,
+        val cleanUpTags: Boolean = false,
         val sdcard: Boolean,
         val sdcardUri: String,
         val embedThumbnail: Boolean,
@@ -349,6 +370,7 @@ object DownloadUtil {
                     privateDirectory = PRIVATE_DIRECTORY.getBoolean(),
                     cropArtwork = CROP_ARTWORK.getBoolean(),
                     cropArtworkStyle = CROP_ARTWORK_STYLE.getInt(),
+                    cleanUpTags = CLEAN_UP_TAGS.getBoolean(),
                     sdcard = SDCARD_DOWNLOAD.getBoolean(),
                     sdcardUri = SDCARD_URI.getString(),
                     embedThumbnail = EMBED_THUMBNAIL.getBoolean(),
@@ -629,6 +651,9 @@ object DownloadUtil {
                         FileUtil.writeContentToFile(cropArtworkCommand(cropArtworkStyle), configFile)
                         addOption("--config", configFile.absolutePath)
                     }
+                }
+                if (embedMetadata && cleanUpTags) {
+                    addCommands(CLEAN_UP_TAGS_COMMANDS)
                 }
                 addOption("--parse-metadata", "%(release_year,upload_date)s:%(meta_date)s")
 
